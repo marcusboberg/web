@@ -45,3 +45,14 @@ aliases = [
 ```
 
 This way, if the structure of the page changes, users will still be able to use their old links.
+
+## Search and analytics
+
+This project uses [Pagefind](https://pagefind.app) to build a search index after Hugo builds. Install dependencies and run:
+
+```
+npm install
+npm run build
+```
+
+The build script runs `hugo` followed by `pagefind` to create the `/public/pagefind` index. The search page reports queries and result counts to Matomo via `window._paq?.push(['trackSiteSearch', query, false, results.length]);`.
