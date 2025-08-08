@@ -1,0 +1,17 @@
+{{ partial "head.html" . }}
+<body>
+  {{ partial "header.html" . }}
+  <main class="main-default-single">
+    <div id="search"></div>
+  </main>
+  {{ partial "footer.html" . }}
+  <script src="https://cdn.jsdelivr.net/npm/pagefind@1/dist/pagefind-ui.js"></script>
+  <script>
+    const ui = new PagefindUI({ element: "#search", pagefindUrl: "/pagefind/" });
+    window.addEventListener('pagefind/search', (e) => {
+      const query = e.detail.term;
+      const results = e.detail.results || [];
+      window._paq?.push(['trackSiteSearch', query, false, results.length]);
+    });
+  </script>
+</body>
