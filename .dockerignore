@@ -1,0 +1,11 @@
+.git
+.gitignore
+.github
+node_modules
+public
+resources
+.DS_Store
+.env*
+deploy
+scripts/*.pyc
+__pycache__

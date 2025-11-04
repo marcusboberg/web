@@ -6,7 +6,7 @@ metadata:
     kubernetes.io/ingress.class: nginx
 spec:
   rules:
-  - host: <din-externa-ip>.sslip.io
+  - host: www3.safespring.com
     http:
       paths:
       - path: /

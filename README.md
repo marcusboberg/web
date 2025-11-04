@@ -155,3 +155,60 @@ What it does: updates/creates frontmatter with `ai: true` and `language: "<lang>
 - **Missing API key**: Set `OPENAI_API_KEY` in `.env.local` or your environment.
 - **Unsupported path**: Ensure the file lives under `content/<sv|en|nb|da>/...`.
 - **Costs**: Translations call OpenAI and may incur usage charges.
+
+## Container image & Kubernetes deployment
+
+The repository now ships with a production-ready Dockerfile that builds the Hugo site and serves the generated static files through `nginx`. A typical workflow looks like this:
+
+1. **Build the image locally**
+
+   ```bash
+   docker build -t ghcr.io/<org>/web:<tag> .
+   ```
+
+   The build stage runs `hugo --minify --gc` and produces static assets in `/usr/share/nginx/html` inside the image.
+
+2. **Push the image to a registry that your cluster can reach**
+
+   ```bash
+   docker push ghcr.io/<org>/web:<tag>
+   ```
+
+3. **Update the deployment manifests**
+
+   - The base manifest (`deploy/base/deployment.yaml`) defaults to `ghcr.io/safespring/web:latest`.
+   - Overlays (for example `deploy/overlays/beta/kustomization.yaml`) can override the tag or registry with the `images:` block. Edit the value to match the image you just pushed.
+  - The beta overlay ingress is configured to use `www3.safespring.com`, which should resolve to `192.121.132.74` (the ingress IP that fronts `api.web-hugo.paas.safedc.net`). Update the host in `deploy/overlays/beta/ingress.yaml` if your DNS entry needs to point somewhere else.
+
+4. **Apply the overlay to your cluster**
+
+   Save the kubeconfig snippet from above as `web-hugo-kubeconfig` and ensure the accompanying certificate bundle is available if you need to inspect it. Then run:
+
+   ```bash
+   kustomize build deploy/overlays/beta \
+     | kubectl --kubeconfig ./web-hugo-kubeconfig apply -f -
+   ```
+
+   You can also use `kubectl kustomize deploy/overlays/beta` if your `kubectl` binary includes the plugin.
+
+5. **Verify the rollout**
+
+   ```bash
+   kubectl --kubeconfig ./web-hugo-kubeconfig -n web-beta get deploy,pods,svc,ingress
+   ```
+
+  Once the DNS entry for `www3.safespring.com` resolves to your cluster's ingress IP, visiting `https://www3.safespring.com` should show the Safespring site being served from your cluster.
+
+### Handling private registries
+
+If the registry requires authentication, create a Docker registry secret in the target namespace and reference it from the deployment:
+
+```bash
+kubectl --kubeconfig ./web-hugo-kubeconfig create secret docker-registry ghcr \
+  --namespace web-beta \
+  --docker-server=ghcr.io \
+  --docker-username=<user> \
+  --docker-password=<token>
+```
+
+Then add the secret name to `spec.template.spec.imagePullSecrets` in `deploy/base/deployment.yaml`.
