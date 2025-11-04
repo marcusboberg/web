@@ -13,18 +13,23 @@ spec:
         app: web
     spec:
       containers:
-      - name: nginx
-        image: nginxdemos/nginx-hello:plain-text
+      - name: web
+        image: ghcr.io/safespring/web:latest
+        imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 8080
+        - containerPort: 80
         readinessProbe:
-          httpGet: { path: /, port: 8080 }
+          httpGet: { path: /, port: 80 }
           initialDelaySeconds: 3
           periodSeconds: 5
         livenessProbe:
-          httpGet: { path: /, port: 8080 }
+          httpGet: { path: /, port: 80 }
           initialDelaySeconds: 10
           periodSeconds: 10
         resources:
           requests: { cpu: 50m, memory: 64Mi }
           limits:   { cpu: 200m, memory: 256Mi }
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 101

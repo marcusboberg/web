@@ -6,7 +6,12 @@ labels:
   - pairs:
       env: beta
 resources:
+  - namespace.yaml
   - ../../base
+  - ingress.yaml
+images:
+  - name: ghcr.io/safespring/web
+    newTag: beta
 replicas:
   - name: web
     count: 2
