@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: web-beta
+  namespace: argocd
+  annotations:
+    argocd-image-updater.argoproj.io/image-list: web=ghcr.io/safespring/web:beta
+    argocd-image-updater.argoproj.io/web.update-strategy: digest
+    argocd-image-updater.argoproj.io/web.force-update: "true"
+    argocd-image-updater.argoproj.io/write-back-method: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/safespring/web.git
+    targetRevision: HEAD
+    path: deploy/overlays/beta
+    kustomize:
+      images:
+        - ghcr.io/safespring/web:beta
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: web-beta
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

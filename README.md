@@ -212,3 +212,36 @@ kubectl --kubeconfig ./web-hugo-kubeconfig create secret docker-registry ghcr \
 ```
 
 Then add the secret name to `spec.template.spec.imagePullSecrets` in `deploy/base/deployment.yaml`.
+
+### GitOps with ArgoCD
+
+If you are running [ArgoCD](https://argo-cd.readthedocs.io/) in your cluster you can let it
+continuously reconcile the `beta` overlay and automatically roll out new container images
+whenever a build pushes a new tag to the registry. The repository ships with an
+`Application` manifest in `deploy/argo/application-web-beta.yaml` that assumes:
+
+- ArgoCD runs in the `argocd` namespace.
+- The `web` image is built and pushed to `ghcr.io/safespring/web` with a tag named `beta`.
+- [argocd-image-updater](https://argocd-image-updater.readthedocs.io/) is installed in the
+  cluster with permission to manage ArgoCD applications.
+
+To bootstrap the GitOps flow:
+
+1. Make sure the repository is registered in ArgoCD (`argocd repo add` or through the UI).
+   If argocd-image-updater should push commits, configure a deploy key or personal access
+   token with write access.
+2. Apply the ArgoCD application manifest:
+
+   ```bash
+   kubectl --kubeconfig ./web-hugo-kubeconfig apply -f deploy/argo/application-web-beta.yaml
+   ```
+
+3. The application enables automated sync, namespace creation and self-healing. It also
+   carries the image-updater annotations required to watch the `ghcr.io/safespring/web:beta`
+   tag. Whenever a new image with that tag is pushed, argocd-image-updater refreshes the
+   `kustomize.images` parameter on the application and triggers a sync, resulting in a new
+   rollout without manual intervention.
+
+If you prefer to manage tags manually, remove the `argocd-image-updater` annotations from the
+application manifest and update `deploy/overlays/beta/kustomization.yaml` with the desired
+image tag before committing.
